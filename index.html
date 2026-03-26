@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HapticWear Simulator</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#09090B;color:#CECED6;font-family:Calibri,'Segoe UI',sans-serif;overflow:hidden;height:100vh;width:100vw}
+.app{display:grid;grid-template-columns:260px 1fr;grid-template-rows:44px 1fr 140px;height:100vh}
+
+.topbar{grid-column:1/-1;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid #1A1A1E;gap:14px}
+.logo-h{font-size:18px;font-weight:700;color:#fff;letter-spacing:2px;font-family:Calibri,sans-serif}
+.logo-sub{font-size:9px;color:#444;letter-spacing:2px;font-family:Consolas,monospace;margin-left:8px}
+.sep{width:1px;height:18px;background:#1A1A1E}
+.tabs{display:flex;gap:2px;background:#0E0E10;border-radius:4px;padding:2px}
+.tab{padding:5px 12px;font-size:9px;font-family:Consolas,monospace;color:#333;background:transparent;border:none;border-radius:3px;cursor:pointer;letter-spacing:1px}
+.tab.on{background:#1A1A1E;color:#CECED6}
+.top-r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.dot{width:6px;height:6px;border-radius:50%;background:#333;transition:all .3s}
+.dot.on{background:#fff;box-shadow:0 0 6px rgba(255,255,255,.3)}
+.top-st{font-size:9px;font-family:Consolas,monospace;color:#333;letter-spacing:1px}
+
+.panel{grid-row:2/3;background:#0A0A0C;border-right:1px solid #1A1A1E;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.panel::-webkit-scrollbar{width:2px}
+.panel::-webkit-scrollbar-thumb{background:#1A1A1E;border-radius:2px}
+.sec{background:#0E0E10;border:1px solid #141418;border-radius:5px;padding:10px}
+.sec-t{font-size:8px;font-family:Consolas,monospace;color:#2D2D2E;letter-spacing:2px;text-transform:uppercase;margin-bottom:7px}
+.btn{width:100%;padding:9px;background:#111;color:#777;border:1px solid #1A1A1E;font-family:Calibri,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;cursor:pointer;border-radius:4px;text-align:center}
+.btn:active{opacity:.8;transform:scale(.98)}
+.btn.on{border-color:rgba(255,255,255,.2);color:#fff}
+.btn-row{display:flex;gap:4px}
+.btn-row .btn{flex:1;padding:7px;font-size:9px}
+
+.meter{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.meter-l{width:40px;font-size:8px;font-family:Consolas,monospace;color:#2D2D2E;flex-shrink:0}
+.meter-b{flex:1;height:3px;background:#141418;border-radius:2px;overflow:hidden}
+.meter-f{height:100%;border-radius:2px;width:0%;transition:width 50ms;background:#CECED6}
+.meter-v{width:30px;text-align:right;font-size:8px;font-family:Consolas,monospace;color:#2D2D2E}
+
+.motors{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.mot-lbl{grid-column:1/-1;font-size:7px;font-family:Consolas,monospace;color:#1A1A1E;letter-spacing:2px;text-align:center;padding:2px}
+.mot{background:#0E0E10;border:1px solid #151518;border-radius:4px;padding:7px;text-align:center;transition:all 80ms}
+.mot.on{border-color:rgba(255,255,255,.3);box-shadow:0 0 8px rgba(255,255,255,.05)}
+.mot-id{font-size:11px;font-weight:700;font-family:Consolas,monospace;color:#333}.mot.on .mot-id{color:#fff}
+.mot-sub{font-size:7px;color:#1A1A1E;font-family:Consolas,monospace;margin-top:1px;letter-spacing:1px}
+.mot-pct{font-size:8px;color:#2D2D2E;font-family:Consolas,monospace;margin-top:2px}
+
+.vib-box{background:#0E0E10;border:1px solid #141418;border-radius:5px;padding:10px;text-align:center}
+.vib-label{font-size:7px;font-family:Consolas,monospace;color:#1A1A1E;letter-spacing:2px;margin-bottom:3px}
+.vib-state{font-size:15px;font-weight:700;color:#1A1A1E;letter-spacing:3px;transition:all .1s}
+.vib-state.on{color:#fff;animation:shake .08s infinite alternate}
+@keyframes shake{0%{transform:translateX(-1px)}100%{transform:translateX(1px)}}
+.vib-mode{font-size:7px;color:#1A1A1E;font-family:Consolas,monospace;margin-top:2px}
+
+.sens{display:flex;align-items:center;gap:5px;font-size:8px;color:#333;font-family:Consolas,monospace}
+.sens input{flex:1;height:3px;-webkit-appearance:none;background:#1A1A1E;border-radius:2px;outline:none}
+.sens input::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:#CECED6;cursor:pointer}
+
+.viewport{position:relative;background:#09090B;overflow:hidden}
+.viewport canvas{display:block;width:100%;height:100%}
+.vp-info{position:absolute;top:10px;right:10px;font-size:8px;font-family:Consolas,monospace;color:#1A1A1E;text-align:right;line-height:1.6}
+
+.spectrum{grid-column:1/-1;background:#0A0A0C;border-top:1px solid #1A1A1E;position:relative;overflow:hidden}
+.spectrum canvas{width:100%;height:100%;display:block}
+.sp-lbl{position:absolute;bottom:6px;left:10px;font-size:7px;font-family:Consolas,monospace;color:#1A1A1E;letter-spacing:1px}
+.sp-r{position:absolute;bottom:6px;right:10px;font-size:7px;font-family:Consolas,monospace;color:#1A1A1E}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <div class="logo-h">H</div>
+  <div class="logo-sub">HAPTICWEAR SIMULATOR</div>
+  <div class="sep"></div>
+  <div class="tabs">
+    <button class="tab on" id="tC" onclick="sm('cross')">CROSS-MODAL</button>
+    <button class="tab" id="tA" onclick="sm('arb')">ARBITRARY</button>
+    <button class="tab" id="tO" onclick="sm('off')">OFF</button>
+  </div>
+  <div class="top-r"><div class="dot" id="dot"></div><div class="top-st" id="topSt">STANDBY</div></div>
+</div>
+
+<div class="panel">
+  <div class="sec">
+    <div class="sec-t">AUDIO INPUT</div>
+    <div class="btn-row">
+      <button class="btn" id="micBtn" onclick="toggleMic()">MIC</button>
+      <button class="btn" id="fileBtn" onclick="document.getElementById('fileIn').click()">FILE</button>
+    </div>
+    <input type="file" id="fileIn" accept="audio/*" style="display:none">
+    <div id="playRow" style="display:none;margin-top:5px">
+      <div class="btn-row"><button class="btn" id="playBtn" onclick="togglePlay()" style="flex:0 0 35px">▶</button>
+      <input type="range" id="seek" min="0" max="1000" value="0" style="flex:1;height:3px;-webkit-appearance:none;background:#1A1A1E;border-radius:2px;outline:none"></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-t">CONNECT TO VEST</div>
+    <button class="btn" id="bleBtn" onclick="toggleBLE()">BLE CONNECT</button>
+  </div>
+  <div class="sec">
+    <div class="sec-t">SENSITIVITY</div>
+    <div class="sens"><span>LEVEL</span><input type="range" min="1" max="10" value="7" id="sensSlider" oninput="sens=parseInt(this.value);document.getElementById('sensV').textContent=this.value"><span id="sensV">7</span></div>
+  </div>
+  <div class="sec">
+    <div class="sec-t">FEATURES</div>
+    <div class="meter"><span class="meter-l">RMS</span><div class="meter-b"><div class="meter-f" id="fR"></div></div><span class="meter-v" id="vR">0</span></div>
+    <div class="meter"><span class="meter-l">LOW</span><div class="meter-b"><div class="meter-f" id="fL"></div></div><span class="meter-v" id="vL">0</span></div>
+    <div class="meter"><span class="meter-l">MID</span><div class="meter-b"><div class="meter-f" id="fM"></div></div><span class="meter-v" id="vM">0</span></div>
+    <div class="meter"><span class="meter-l">HIGH</span><div class="meter-b"><div class="meter-f" id="fH"></div></div><span class="meter-v" id="vH">0</span></div>
+  </div>
+  <div class="vib-box">
+    <div class="vib-label">VIBRATION</div>
+    <div class="vib-state" id="vibS">OFF</div>
+    <div class="vib-mode" id="vibM">—</div>
+  </div>
+  <div class="sec">
+    <div class="sec-t">MOTOR OUTPUT</div>
+    <div class="motors">
+      <div class="mot-lbl">FRONT</div>
+      <div class="mot" id="mo0"><div class="mot-id">M1</div><div class="mot-sub">LOWER L</div><div class="mot-pct" id="mp0">0%</div></div>
+      <div class="mot" id="mo1"><div class="mot-id">M2</div><div class="mot-sub">LOWER R</div><div class="mot-pct" id="mp1">0%</div></div>
+      <div class="mot-lbl">BACK</div>
+      <div class="mot" id="mo2"><div class="mot-id">M3</div><div class="mot-sub">LOWER L</div><div class="mot-pct" id="mp2">0%</div></div>
+      <div class="mot" id="mo3"><div class="mot-id">M4</div><div class="mot-sub">LOWER R</div><div class="mot-pct" id="mp3">0%</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="viewport" id="viewport">
+  <div class="vp-info" id="vpInfo">motors: 4</div>
+</div>
+
+<div class="spectrum">
+  <canvas id="spCv"></canvas>
+  <div class="sp-lbl">FREQUENCY SPECTRUM</div>
+  <div class="sp-r">44.1kHz</div>
+</div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"}}</script>
+<script type="module">
+import*as THREE from'three';
+import{OrbitControls}from'three/addons/controls/OrbitControls.js';
+import{GLTFLoader}from'three/addons/loaders/GLTFLoader.js';
+
+var vp=document.getElementById('viewport');
+var scene=new THREE.Scene();scene.background=new THREE.Color(0x09090B);scene.fog=new THREE.FogExp2(0x09090B,0.08);
+var cam=new THREE.PerspectiveCamera(40,vp.clientWidth/vp.clientHeight,0.1,100);cam.position.set(0,0.15,2.2);
+var ren=new THREE.WebGLRenderer({antialias:true});ren.setSize(vp.clientWidth,vp.clientHeight);ren.setPixelRatio(Math.min(window.devicePixelRatio,2));
+ren.toneMapping=THREE.ACESFilmicToneMapping;ren.toneMappingExposure=0.9;vp.appendChild(ren.domElement);
+var ctrl=new OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;ctrl.dampingFactor=0.06;ctrl.target.set(0,0.15,0);ctrl.minDistance=0.8;ctrl.maxDistance=5;ctrl.autoRotate=true;ctrl.autoRotateSpeed=0.5;
+scene.add(new THREE.AmbientLight(0xffffff,0.5));
+var kl=new THREE.DirectionalLight(0xfff8ee,0.9);kl.position.set(3,4,3);scene.add(kl);
+var rl=new THREE.DirectionalLight(0xddeeff,0.5);rl.position.set(-3,2,-2);scene.add(rl);
+var bl=new THREE.DirectionalLight(0xffffff,0.3);bl.position.set(0,1,-3);scene.add(bl);
+scene.add(new THREE.GridHelper(6,40,0x111114,0x111114).translateY(-0.85));
+var group=new THREE.Group();scene.add(group);
+
+function buildProc(){
+  var mat=new THREE.MeshStandardMaterial({color:0x1a1a1e,roughness:0.75,metalness:0.1,transparent:true,opacity:0.5});
+  group.add(new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.22,1.0,24),mat).translateY(0.25));
+  group.add(new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.30,0.12,24),mat).translateY(0.64));
+  group.add(new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.11,0.14,16),mat).translateY(0.82));
+  group.add(new THREE.Mesh(new THREE.SphereGeometry(0.12,16,12),mat).translateY(1.0));
+  group.add(new THREE.Mesh(new THREE.CylinderGeometry(0.282,0.222,1.01,24,6),new THREE.MeshBasicMaterial({color:0x2a2a30,wireframe:true,transparent:true,opacity:0.15})).translateY(0.25));
+}
+
+var loader=new GLTFLoader();
+loader.load('hapticwear-model.glb',function(gltf){
+  var m=gltf.scene;var box=new THREE.Box3().setFromObject(m);var sz=box.getSize(new THREE.Vector3());var ct=box.getCenter(new THREE.Vector3());
+  m.position.set(-ct.x,-ct.y,-ct.z);var wr=new THREE.Group();wr.add(m);var sc=1.6/Math.max(sz.x,sz.y,sz.z);wr.scale.setScalar(sc);wr.position.y=0.25;
+  m.traverse(function(c){if(c.isMesh){c.material=new THREE.MeshStandardMaterial({color:0x8a8880,roughness:0.6,metalness:0.2,transparent:true,opacity:0.7,side:THREE.DoubleSide})}});
+  m.traverse(function(c){if(c.isMesh&&c.geometry){var w=new THREE.Mesh(c.geometry.clone(),new THREE.MeshBasicMaterial({color:0xaaa99a,wireframe:true,transparent:true,opacity:0.06,side:THREE.DoubleSide}));w.position.copy(c.position);w.rotation.copy(c.rotation);w.scale.copy(c.scale);c.parent.add(w)}});
+  group.add(wr);
+  var v=0,f=0;m.traverse(function(c){if(c.isMesh&&c.geometry){v+=(c.geometry.attributes.position?c.geometry.attributes.position.count:0);f+=c.geometry.index?c.geometry.index.count/3:(c.geometry.attributes.position?c.geometry.attributes.position.count:0)/3}});
+  document.getElementById('vpInfo').innerHTML='vertices: '+v.toLocaleString()+'<br>faces: '+Math.round(f).toLocaleString()+'<br>motors: 4';
+},undefined,function(){buildProc()});
+
+var mpos=[{x:-0.16,y:0.0,z:0.20},{x:0.16,y:0.0,z:0.20},{x:-0.16,y:0.0,z:-0.18},{x:0.16,y:0.0,z:-0.18}];
+var pads=[];
+mpos.forEach(function(p){
+  var dir=p.z>=0?new THREE.Vector3(0,0,1):new THREE.Vector3(0,0,-1);
+  var rm=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false});
+  var ring=new THREE.Mesh(new THREE.RingGeometry(0.05,0.085,32),rm);ring.position.set(p.x,p.y,p.z);ring.lookAt(p.x+dir.x,p.y+dir.y,p.z+dir.z);group.add(ring);
+  var cm=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.03,side:THREE.DoubleSide,depthWrite:false});
+  var core=new THREE.Mesh(new THREE.CircleGeometry(0.05,32),cm);core.position.set(p.x,p.y,p.z+(p.z>=0?0.001:-0.001));core.lookAt(p.x+dir.x,p.y+dir.y,p.z+dir.z);group.add(core);
+  pads.push({ring:ring,rm:rm,core:core,cm:cm,a:0});
+});
+
+function animate(){
+  requestAnimationFrame(animate);ctrl.update();
+  var mv=window._zv||[0,0,0,0];
+  pads.forEach(function(p,i){var t=mv[i];p.a+=(t-p.a)*0.18;var a=p.a;p.rm.opacity=a*0.7;p.cm.opacity=0.02+a*0.5;var s=1+a*0.35;p.ring.scale.set(s,s,s)});
+  ren.render(scene,cam);
+}
+animate();
+window.addEventListener('resize',function(){cam.aspect=vp.clientWidth/vp.clientHeight;cam.updateProjectionMatrix();ren.setSize(vp.clientWidth,vp.clientHeight)});
+</script>
+
+<script>
+var ax,an,srcNode,audioEl,micStream,fftD,tdBuf;
+var listening=false,playing=false,mode='cross',sens=7;
+var noiseFloor=0,calibrated=false,calSamples=[],calStart=0;
+var sR=0,sL=0,sM=0,sH=0,SM=0.3,FFT=1024;
+var lt=0,lastVibEnd=0;
+var bleDevice,bleChar,bleOn=false;
+window._zv=[0,0,0,0];
+
+function initAudio(){if(!ax){ax=new(window.AudioContext||window.webkitAudioContext)();an=ax.createAnalyser();an.fftSize=FFT;an.smoothingTimeConstant=0.4;fftD=new Float32Array(an.frequencyBinCount);tdBuf=new Float32Array(an.fftSize)}}
+
+window.toggleMic=function(){
+  initAudio();if(ax.state==='suspended')ax.resume();
+  if(micStream){micStream.getTracks().forEach(function(t){t.stop()});micStream=null;listening=false;document.getElementById('micBtn').classList.remove('on');setSt('STANDBY');return}
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(s){
+    micStream=s;srcNode=ax.createMediaStreamSource(s);srcNode.connect(an);listening=true;document.getElementById('micBtn').classList.add('on');
+    calibrated=false;calSamples=[];calStart=0;noiseFloor=0;setSt('CALIBRATING');
+  }).catch(function(){setSt('MIC DENIED')})};
+
+document.getElementById('fileIn').addEventListener('change',function(e){
+  var f=e.target.files[0];if(!f)return;initAudio();
+  if(audioEl)audioEl.pause();if(srcNode)try{srcNode.disconnect()}catch(e){}
+  audioEl=new Audio(URL.createObjectURL(f));audioEl.crossOrigin='anonymous';
+  audioEl.addEventListener('canplay',function(){srcNode=ax.createMediaElementSource(audioEl);srcNode.connect(an);an.connect(ax.destination);
+    document.getElementById('playRow').style.display='block';document.getElementById('fileBtn').classList.add('on');setSt('READY')},{once:true})});
+
+window.togglePlay=function(){
+  if(!audioEl)return;if(ax.state==='suspended')ax.resume();
+  if(audioEl.paused){audioEl.play();playing=true;document.getElementById('playBtn').textContent='⏸';setSt('PLAYING');calibrated=false;calSamples=[];calStart=0;noiseFloor=0}
+  else{audioEl.pause();playing=false;document.getElementById('playBtn').textContent='▶';setSt('PAUSED')}};
+var seekEl=document.getElementById('seek');
+seekEl.addEventListener('input',function(){if(audioEl&&audioEl.duration)audioEl.currentTime=(seekEl.value/1000)*audioEl.duration});
+
+window.toggleBLE=function(){
+  if(bleOn){if(bleDevice&&bleDevice.gatt.connected)bleDevice.gatt.disconnect();bleOn=false;document.getElementById('bleBtn').textContent='BLE CONNECT';document.getElementById('bleBtn').classList.remove('on');return}
+  navigator.bluetooth.requestDevice({filters:[{name:'HapticWear'}],optionalServices:['19b10000-e8f2-537e-4f6c-d104768a1214']}).then(function(d){
+    bleDevice=d;return d.gatt.connect()}).then(function(srv){return srv.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214')}).then(function(svc){
+    return svc.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214')}).then(function(c){
+    bleChar=c;bleOn=true;document.getElementById('bleBtn').textContent='CONNECTED';document.getElementById('bleBtn').classList.add('on');
+    bleDevice.addEventListener('gattserverdisconnected',function(){bleOn=false;document.getElementById('bleBtn').textContent='BLE CONNECT';document.getElementById('bleBtn').classList.remove('on')});
+  }).catch(function(e){console.error(e)})};
+
+function sendBLE(v){if(!bleOn||!bleChar)return;try{bleChar.writeValueWithoutResponse(new Uint8Array(v).buffer)}catch(e){}}
+
+function setSt(s){document.getElementById('topSt').textContent=s;document.getElementById('dot').classList.toggle('on',s==='PLAYING'||s==='LISTENING'||s==='LIVE')}
+window.sm=function(m){mode=m;document.getElementById('tC').classList.toggle('on',m==='cross');document.getElementById('tA').classList.toggle('on',m==='arb');document.getElementById('tO').classList.toggle('on',m==='off')};
+
+function fi(f){return Math.round(f*FFT/44100)}
+function be(d,lo,hi){var a=fi(lo),b=Math.min(fi(hi),d.length-1);var s=0,n=0;for(var i=a;i<=b;i++){s+=Math.pow(10,d[i]/20);n++}return n>0?s/n:0}
+
+var spCv=document.getElementById('spCv');var spCx=spCv.getContext('2d');
+
+function drawSpec(){
+  var w=spCv.width=spCv.parentElement.clientWidth*2;var h=spCv.height=spCv.parentElement.clientHeight*2;
+  spCx.fillStyle='#0A0A0C';spCx.fillRect(0,0,w,h);
+  if(!an||(!listening&&!playing)){spCx.strokeStyle='#11111444';spCx.lineWidth=1;for(var x=0;x<w;x+=40){spCx.beginPath();spCx.moveTo(x,0);spCx.lineTo(x,h);spCx.stroke()}for(var y=0;y<h;y+=20){spCx.beginPath();spCx.moveTo(0,y);spCx.lineTo(w,y);spCx.stroke()}return}
+  var bins=an.frequencyBinCount;var bw=w/bins*2;var sr=ax.sampleRate;
+  for(var i=0;i<bins;i++){var v=(fftD[i]+100)/100;var bh=Math.max(0,v*h*.9);var x=(i/bins)*w;var f=i*(sr/an.fftSize);
+    var r,g,b;if(f<300){r=93;g=202;b=165}else if(f<2000){r=239;g=159;b=39}else{r=175;g=169;b=236}
+    spCx.fillStyle='rgba('+r+','+g+','+b+','+(0.12+v*0.2)+')';spCx.fillRect(x,h-bh,Math.max(bw,1.5),bh);
+    spCx.fillStyle='rgba('+r+','+g+','+b+',0.7)';spCx.fillRect(x,h-bh,Math.max(bw,1.5),2)}
+  var bHz=sr/an.fftSize;
+  [300,2000,8000].forEach(function(freq){var x=(freq/bHz/bins)*w;spCx.strokeStyle='rgba(255,255,255,0.06)';spCx.lineWidth=1;spCx.setLineDash([4,4]);spCx.beginPath();spCx.moveTo(x,0);spCx.lineTo(x,h);spCx.stroke();spCx.setLineDash([]);
+    spCx.fillStyle='rgba(255,255,255,0.1)';spCx.font='14px Consolas,monospace';spCx.fillText(freq<1000?freq+'Hz':(freq/1000)+'kHz',x+4,16)});
+}
+
+function loop(){
+  requestAnimationFrame(loop);
+  if(!an||(!listening&&!playing)){drawSpec();return}
+  an.getFloatFrequencyData(fftD);an.getFloatTimeDomainData(tdBuf);
+  var sq=0;for(var i=0;i<tdBuf.length;i++)sq+=tdBuf[i]*tdBuf[i];var rms=Math.sqrt(sq/tdBuf.length);
+  var lo=be(fftD,20,300),mi=be(fftD,300,2000),hi=be(fftD,2000,8000);
+  sR=sR*SM+rms*(1-SM);sL=sL*SM+lo*(1-SM);sM=sM*SM+mi*(1-SM);sH=sH*SM+hi*(1-SM);
+
+  if(!calibrated){
+    if(calStart===0)calStart=Date.now();calSamples.push(rms);
+    var el=(Date.now()-calStart)/2000;
+    if(el>=1){var mean=0;for(var i=0;i<calSamples.length;i++)mean+=calSamples[i];mean/=calSamples.length;
+      var variance=0;for(var i=0;i<calSamples.length;i++)variance+=(calSamples[i]-mean)*(calSamples[i]-mean);variance/=calSamples.length;
+      noiseFloor=mean+Math.sqrt(variance);calibrated=true;calStart=0;setSt('LIVE')}
+    drawSpec();return}
+
+  var sensM=sens/5;
+  var gate=noiseFloor*(3.0-sensM*1.5);var rG=Math.max(0,sR-gate);
+  var sf=function(id,v,mx){document.getElementById(id).style.width=(Math.min(v/mx,1)*100)+'%'};
+  sf('fR',rG,0.1);sf('fL',sL,0.005);sf('fM',sM,0.003);sf('fH',sH,0.001);
+  document.getElementById('vR').textContent=rG.toFixed(3);document.getElementById('vL').textContent=sL.toFixed(4);
+  document.getElementById('vM').textContent=sM.toFixed(4);document.getElementById('vH').textContent=sH.toFixed(4);
+
+  var zv=[0,0,0,0],modeStr='—';
+  if(mode!=='off'&&rG>0.002){
+    var hd=Math.max(0.01,0.15-gate);var rN=Math.min(rG/hd*sensM,1);
+    var lN=Math.min(sL/0.003*sensM,1),mN=Math.min(sM/0.002*sensM,1),hN=Math.min(sH/0.0008*sensM,1);
+    if(mode==='cross'){zv=[lN*rN,lN*rN,lN*rN*0.7,lN*rN*0.7];modeStr='CROSS-MODAL'}
+    else{zv=[hN*rN,mN*rN,mN*rN*0.7,hN*rN*0.7];modeStr='ARBITRARY'}}
+
+  window._zv=zv;var mx=Math.max.apply(null,zv);
+  for(var i=0;i<4;i++){var el=document.getElementById('mo'+i);var pct=Math.round(zv[i]*100);
+    if(pct>5)el.classList.add('on');else el.classList.remove('on');document.getElementById('mp'+i).textContent=pct+'%'}
+  var vs=document.getElementById('vibS'),vm=document.getElementById('vibM');
+  if(mode!=='off'&&mx>0.03){vs.textContent='ACTIVE';vs.classList.add('on');vm.textContent=modeStr}
+  else{vs.textContent=mode==='off'?'DISABLED':'QUIET';vs.classList.remove('on');vm.textContent=mode==='off'?'—':'BELOW GATE'}
+
+  if(bleOn&&mx>0){var bv=[];for(var i=0;i<4;i++)bv.push(Math.min(200,Math.round(zv[i]*255)));sendBLE(bv)}
+  if(audioEl&&audioEl.duration&&!seekEl.matches(':active'))seekEl.value=(audioEl.currentTime/audioEl.duration)*1000;
+  drawSpec();
+}
+loop();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+</script>
+</body>
+</html>
